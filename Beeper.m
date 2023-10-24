@@ -8,10 +8,13 @@ disp(brick.GyroAngle(3));
 disp("Ready")
 while 1
     pause(0.1);
-    if(key ~= 0)
+    if(key ~= 0)    
         switch key
             case "uparrow"
-                move(brick,75, 0.3);
+                brick.MoveMotor('AB', 40);
+                brick.MoveMotor('B', 43.4);
+                pause(6.0)
+                brick.StopMotor('AB', "Brake");
             case "downarrow"
                 move(brick,-75, 0.3);
             case "leftarrow"
@@ -53,7 +56,7 @@ while 1
                gyro = brick.GyroAngle(3);
                disp("Current angle is: " +gyro)  
             case "r"
-                brick.MoveMotor('AB', 35);
+                brick.MoveMotor('AB', 40);
                 pause(0.1);
                 while(1==1)
                     if(key ~= 0 )
@@ -62,16 +65,13 @@ while 1
                         end
                     end
                     %move foward
-                    brick.MoveMotor('AB', 35);
-                    brick.MoveMotor('B', 39);
+                    brick.MoveMotor('AB', 40);
+                    brick.MoveMotor('B', 43.5);
                     color = brick.ColorCode(1);
                     if(color == 2)
                         pause(0.3);
                         disp("ITS BLUEE!!!!🟦🟦")
-                        brick.MoveMotor('AB', 35);
-                        brick.MoveMotor('B', -35);
-                        pause(3)
-                        brick.StopMotor('AB', "Brake");
+                      
                     end
                     if(color == 5)
                         disp("ITS RED!!!!🍎🍎🍎")
@@ -87,12 +87,14 @@ while 1
                     disp(brick.TouchPressed(2))
                     distance = brick.UltrasonicDist(4);
                     if(distance > 65)
-                         brick.MoveMotor('AB', 50);
-                        pause(1.8)
+                         brick.MoveMotor('AB', 40);
+                         brick.MoveMotor('B', 43.5);
+                        pause(2.5)
                          brick.StopMotor('AB', "Brake");
                          turnRight(brick);
-                        brick.MoveMotor('AB', 100);
-                        pause(2.8)
+                        brick.MoveMotor('AB', 40);
+                        brick.MoveMotor('B', 43.5);
+                        pause(4)
                         brick.StopMotor('AB', "Brake");
                     end
                         
@@ -101,11 +103,12 @@ while 1
                         %ouch! hit a wall
                         disp("I just hit a wall")
                         disp("Thinking...")
-                        brick.MoveMotor('AB', -30);
-                        pause(1.0)
+                        brick.MoveMotor('AB', -40);
+                        brick.MoveMotor('B', -43.5);
+                        pause(2.0)
                         brick.StopMotor('AB', "Brake");
                         distance = brick.UltrasonicDist(4);
-                        if(distance > 30)
+                        if(distance > 45)
                             %turn right
                             turnRight(brick);
                         else
@@ -138,8 +141,8 @@ function turnLeft(brick)
         while( newAngle > -85)   
             newAngle = brick.GyroAngle(3);
             disp(newAngle)
-            brick.MoveMotor('A', -20);
-            brick.MoveMotor('B', 20);
+            brick.MoveMotor('A', -40);
+            brick.MoveMotor('B', 40);
             pause(0.01)
         end
         brick.StopMotor('AB', "Brake");
@@ -152,8 +155,8 @@ function turnRight(brick)
         while( newAngle < 85)   
             newAngle = brick.GyroAngle(3);
             disp(newAngle)
-            brick.MoveMotor('A', 20);
-            brick.MoveMotor('B', -20);
+            brick.MoveMotor('A', 40);
+            brick.MoveMotor('B', -40);
             pause(0.01)
         end
         brick.StopMotor('AB', "Brake");
