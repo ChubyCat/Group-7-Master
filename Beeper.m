@@ -1,21 +1,78 @@
 global key
+global gyroStart
 InitKeyboard();
-brick.SetColorMode(1,2);
-
+brick.SetColorMode(1, 4);  % Set Color Sensor connected to Port 1 to Color Code Mode
 disp("Ready")
 finished = false;
+%Have to call angle at start becasue first angle is NaN
+%1 -  color
+%2 -  touch
+%3 - gyro
+%4 -  ultrasonic
+
+%A - left
+%B - right
+%C - tail
 while 1
     pause(0.1);
     if(key ~= 0)    
         switch key
             case "uparrow"
-                move(brick,75, 0.3);
+                try
+                    while(key == "uparrow" )
+                        
+                        brick.MoveMotor('A', 95);
+                        brick.MoveMotor('B', 100);
+                    end
+                catch
+                    brick.StopMotor('AB', "Brake");
+                end
+                 brick.StopMotor('AB', "Brake");
             case "downarrow"
-                move(brick,-75, 0.3);
+                try
+                    while(key == "downarrow" )
+                        
+                        brick.MoveMotor('A', -75);
+                        brick.MoveMotor('B', -75);
+                    end
+                catch
+                    brick.StopMotor('AB', "Brake");
+                end
+                 brick.StopMotor('AB', "Brake");
             case "leftarrow"
-                turnLeft(brick);
+                try
+                    while(key == "leftarrow" )
+                        
+                        brick.MoveMotor('A', -40);
+                        brick.MoveMotor('B', 40);
+                    end
+                catch
+                    brick.StopMotor('AB', "Brake");
+                end
+                 brick.StopMotor('AB', "Brake");
             case "rightarrow"
-                turnRight(brick);
+                try
+                    while(key == "rightarrow" )
+                        
+                        brick.MoveMotor('A', 40);
+                        brick.MoveMotor('B', -40);
+                    end
+                catch
+                    brick.StopMotor('AB', "Brake");
+                end
+                 brick.StopMotor('AB', "Brake");
+            case "f"
+                A= 0.125;
+                EMA = 20;
+                distance = brick.UltrasonicDist(4);
+                    %This is an EMA(Exponentialy Moving Average) its used
+                    %to smooth out the ultrasonic data
+                    EMA = A * distance + (1-A) * EMA;
+                    Angle = brick.GyroAngle(3);
+                    disp("Distance: " + distance);
+                    disp("EMA: " + EMA);
+                    disp(" ")
+                    pause(0.5);
              case "comma"
                 brick.MoveMotor('A', -30);
                 brick.MoveMotor('B', 30);
@@ -38,137 +95,141 @@ while 1
                 brick.MoveMotor('C', 30);
                 pause(0.1)
                 brick.StopMotor('C', "Brake");
+             case "x"
+                distance = brick.UltrasonicDist(4);
+                disp(distance)
              case "n" 
                brick.MoveMotor('AB', 30);
                 pause(0.1)
                 brick.StopMotor('AB', "Brake");  
+            case "a"
+                 distance = brick.UltrasonicDist(4);
+                 disp("Distance: " + distance);
             case "r"
+                disp("Starting...")
                 %Calibrate gyro at start
                 brick.GyroCalibrate(3);
-                pause(1)
+                pause(3)
                 %Have to call angle at start becasue first angle is NaN
                 disp(brick.GyroAngle(3));
-                brick.MoveMotor('AB', 40);
-                pause(0.1);
                 %Set gyroStart for the adjustSpeed algorithm
                 gyroStart = brick.GyroAngle(3);
+                turnCount = 0;
+                finished = false;
+                A = 0.07; %This is my value for gain
+                EMA = 20;
                 while(1==1)
                     if(key ~= 0 )
                         if(key == "q")
+                            brick.StopMotor('AB', "Brake");
                             break;
                         end
                     end
-                    %move foward
-                    brick.MoveMotor('AB', 40);
-                    brick.MoveMotor('B', 43.5);
+                    %move foward    
+                    brick.MoveMotor('AB', 30);
                     %Move the motors with an offset and adjust
-                    adjustSpeed(brick,gyroStart);
-                    %Record the color ourputted by the brick
-                    color = brick.ColorCode(1);
-                    if(color == 2)
-                        %If its blue, then stop moving and go back to
-                        %overall control
-                        disp("ITS BLUEE!!!!🟦🟦")
-                        brick.StopMotor('AB', "Coast");
-                        %brick.playTone(100, 600, 500);
-                        pause(0.5)
-                        brick.playTone(100, 600, 500);
-                        qbreak;
-                    end
-                    if(color == 4)
-                        %If it yellow, then stop moving, go back to control
-                        disp("ITS YELLOW ⚠️⚠️⚠️")
-                        brick.StopMotor('AB', "Coast");
-                        finished = true;
-                       % brick.playTone(100, 600, 500);
-                       % pause(0.5)
-                       % brick.playTone(100, 600, 500);
-                       % pause(0.5)
-                        %brick.playTone(100, 600, 500);
-                       % pause(0.5)
-                        %brick.playTone(100, 600, 500);
+                    %DriveStraight(brick,gyroStart);
+                    DriveStraight( brick, gyroStart); % No outputs, as gyroStart is global
+                    %Record the color outputted by the brick
+                    [manual, finished] = detectColor(brick,finished);
+                    if(manual)
                         break;
                     end
-                    if(color == 5)
-                        %If its red, then stop for 2 seconds.
-                        disp("ITS RED!!!!🍎🍎🍎")
-                        brick.StopMotor('AB', "Coast");
-                        pause(2.0);
-                        brick.StopMotor('AB', "Brake");
-                        %pause(0.7);
-                         brick.MoveMotor('AB', 30);
-                         brick.MoveMotor('B', 32);
-                         pause(0.3)
-                    end
-                    if(color ==  3 && finished)
-                        %If its green and, yellow has been reached, then
-                        %stop
-                        disp("ITS GREEN!!!!🍏🍏🍏")
-                        brick.StopMotor('AB', "Brake");
-                        %pause(0.5);
-                        %brick.playTone(100, 600, 500);
-                        %pause(0.5)
-                        %brick.playTone(100, 600, 500);
-                        %pause(0.5)
-                        %brick.playTone(100, 600, 500);
-                        %pause(0.5)
-                        break;
-                    end
-                    disp("Moving Foward!")
                     distance = brick.UltrasonicDist(4);
-                    if(distance > 65)
-                      gyroStart = brick.GyroAngle(3);
-                         tic
-                         while(toc < 2)
-                            brick.MoveMotor('AB', 40);
-                            brick.MoveMotor('B', 43.5);
-                            adjustSpeed(brick,gyroStart);
-                         end
-                        % pause(2)
-                         brick.StopMotor('AB', "Brake");
-                         turnLeft(brick);  
-                         pause(0.5)
-                         brick.GyroCalibrate(3);
-                        pause(0.5)
-                        disp(brick.GyroAngle(3));
-                        disp(brick.GyroAngle(3));
+                    %This is an EMA(Exponentialy Moving Average) its used
+                    %to smooth out the ultrasonic data
+                    EMA = A * distance + (1-A) * EMA;
+                    Angle = brick.GyroAngle(3);
+                    disp("Distance: " + distance);
+                    disp("EMA: " + EMA);
+                    disp("Angle: " + Angle);
+                    
+                    if(EMA > 50)
+                        EMA = 20;
+                        disp("Starting Gap Stuff")
+                        brick.MoveMotor('AB', -20);
+                        brick.MoveMotor('B', -24);
+                        pause(1.5)
+                        brick.StopMotor('AB', "Brake");
+                        %gyroStart = brick.GyroAngle(3);
+                        %while(toc < .2)                            
+                        %     DriveStraight(brick,gyroStart);
+                        %    [manual, finished] = detectColor(brick,finished);
+                        %   if(manual)
+                        %      break;
+                        %    end
+                        %end
+                         %Left turn
+                         turnLeft(brick,turnCount);
+                         %Turn(brick,-90);  
+                       [manual, finished] = detectColor(brick,finished);
+                        if(manual)
+                            break;
+                        end         
                         gyroStart = brick.GyroAngle(3);
+                        %gyroStart = -90;
                         disp("AGAIN!")
-                        pause(1)
                         tic
-                        while(toc < 4)
-                            brick.MoveMotor('AB', 40);
-                            brick.MoveMotor('B', 43.5);
-                            adjustSpeed(brick,gyroStart);
+                        brick.MoveMotor('AB', 30);
+                        while(toc < 3)                            
+                            DriveStraight(brick,gyroStart);
+                            [manual, finished] = detectColor(brick,finished);
+                            if(manual)
+                                break;
+                            end
                         end
                         %pause(4)
-                        brick.StopMotor('AB', "Brake");
-                        brick.GyroCalibrate(3);
-                        pause(0.5)
-                        disp(brick.GyroAngle(3));
-                         disp(brick.GyroAngle(3));
-                        pause(1)
-                        disp("AHHHHHHHHh")
-                        gyroStart = brick.GyroAngle(3);
-                        disp(gyroStart)
-                        gyroStart = brick.GyroAngle(3);
+                        brick.StopMotor('AB', "Brake");                     
                     end
-                    if(brick.TouchPressed(2) == 1)                        
+                    if(brick.TouchPressed(2) == 1)   
+                        EMA = 0;
                        brick.StopMotor('AB', "Brake");
                         %ouch! hit a wall
                         disp("I just hit a wall")
-                        brick.MoveMotor('AB', -40);
-                        brick.MoveMotor('B', -43.5);
-                        pause(1.33333)
-                        brick.StopMotor('AB', "Brake");
+                       % gyroStart = -90;
+                        gyroStart = brick.GyroAngle(3);
+                        tic
+                        brick.MoveMotor('AB', -30);
+                        while(toc < 1.8)                            
+                            DriveStraightBack(brick,gyroStart)
+                            [manual, finished] = detectColor(brick,finished);
+                            if(manual)
+                                break;
+                            end
+                        end
+                        brick.StopMotor('AB', "Brake"); 
                         distance = brick.UltrasonicDist(4);
-                        if(distance < 45)
-                            %turn right
-                            turnRight(brick);
-                            gyroStart = brick.GyroAngle(3);
-                        else
+                        [manual, finished] = detectColor(brick,finished);
+                        if(manual)
+                            break;
+                        end   
+                        disp("Distance: " + distance);
+                        tic
+                        avgDistance = distance;
+                        counter = 1;
+                        while(toc < 0.5)
+                            distance = brick.UltrasonicDist(4);
+                            avgDistance = avgDistance + distance;
+                            counter = counter + 1;
+                        end
+                        avgDistance = avgDistance / counter;
+                        
+                        disp("Average: " + avgDistance)
+                        pause(1)
+                        if(avgDistance > 45)
                             %turn left
-                            turnLeft(brick);
+                            turnLeft(brick,turnCount);
+
+                            %Turn(brick,-90)
+                            %turnCount = turnCount + 1;
+                            %gyroStart = -90;
+                           gyroStart = brick.GyroAngle(3);
+                        else
+                            %turn right
+                            turnRight(brick,turnCount);
+                            %Turn(brick,90);
+                            %turnCount = turnCount + 1;
+                            %gyroStart = 90;
                             gyroStart = brick.GyroAngle(3);
                         end
                     end
@@ -189,48 +250,66 @@ function move(brick,maxSpeed, duration)
     end    
     brick.StopMotor('AB', "Coast");
 end
-function turnLeft(brick)
+function turnLeft(brick,turnCount)
     brick.GyroCalibrate(3);
-        pause(0.5)
+        pause(2)
         disp(brick.GyroAngle(3));    
         newAngle = brick.GyroAngle(3);
-        while( newAngle > -80)   
+        brick.MoveMotor('A', -25);
+        brick.MoveMotor('B', 20);
+        switched = false;
+        while( newAngle > -85)   
             newAngle = brick.GyroAngle(3);
-            disp(newAngle)
-            brick.MoveMotor('A', -25);
-            brick.MoveMotor('B', 25);
-            pause(0.05)
+            disp(newAngle);
+            %if(newAngle < -85 && switched == false)
+               % switched = true;
+              %  brick.MoveMotor('A', 10);
+             %   brick.MoveMotor('B', -10);
+            %end
+            %if(newAngle > -85 && switched == true )
+               % switched = false;
+              %  brick.MoveMotor('A', -10);
+             %   brick.MoveMotor('B', 10);
+            %end
         end
         brick.StopMotor('AB', "Brake");
 end
-function turnRight(brick)
+function turnRight(brick, turnCount)
+    brick.GyroCalibrate(3);
+        pause(2)
+        disp(brick.GyroAngle(3));    
+        newAngle = brick.GyroAngle(3);
+        brick.MoveMotor('A', 25);
+        brick.MoveMotor('B', -20);
+        switched = false;
+        while( newAngle < 85)   
+            newAngle = brick.GyroAngle(3);
+            disp(newAngle);
+            %if(newAngle > 85 && switched == false)
+             %   switched = true;
+              %  brick.MoveMotor('A', -10);
+               % brick.MoveMotor('B', 10);
+            %end
+            %if(newAngle < 85 && switched == true )
+            %    switched = false;
+             %   brick.MoveMotor('A', 10);
+             %   brick.MoveMotor('B', -10);
+            %end
+        end
+        brick.StopMotor('AB', "Brake");
+end
+function flipAround(brick)
     brick.GyroCalibrate(3);
         pause(0.5)
         disp(brick.GyroAngle(3));    
         newAngle = brick.GyroAngle(3);
-        while( newAngle < 80)   
+        while( newAngle < 170)   
             newAngle = brick.GyroAngle(3);
             disp(newAngle)
-            brick.MoveMotor('A', 25);
+            brick.MoveMotor('A', 27);
             brick.MoveMotor('B', -25);
             pause(0.05)
         end
         brick.StopMotor('AB', "Brake");
 end
-function plotData(gyroData, ultrasonicData)
-    figure;
-    subplot(2, 1, 1);
-    plot(gyroData, 'r', 'DisplayName', 'Gyro Angle');
-    title('Gyro Angle Data');
-    legend('show');
-    subplot(2, 1, 2);
-    plot(ultrasonicData, 'b', 'DisplayName', 'Ultrasonic Distance');
-    title('Ultrasonic Distance Data');
-    legend('show');
-end
-function adjustSpeed(brick,gyroStart)
-     gyroReading = brick.GyroAngle(3);
-     adj = (gyroStart - gyroReading) *-1;
-     brick.MoveMotor('B', 43 + adj * 5.5);
-     disp(43 + adj);
-end
+
