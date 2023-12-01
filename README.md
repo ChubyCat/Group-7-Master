@@ -5,13 +5,13 @@ The code is organized into four different files.
  - DrveStraight.M contains a helper function that uses the curent gyroscope angle & a goal angle to make sure the robot drives backgward in a straight line
  - detectColor.M contains a helper function and a set of helper functions that determine what color the robot is on top of using a set of thresholds.
 
-#EMA
+# EMA
 The code makes use of an exponential moving average filter for the ultrasonic sensor. This smooths out the sensor so that it outputs more consistent results. The formula for this is 
 A is a gain value
 EMA is the current smoothed distance
 EMA = A * newReading + (1-A) * EMA
 
-#Beeper
+# Beeper File
 The code the beeper file contians the intialization of a keyboard, and then a large switch statment that helps to define what the robot does next
 A while loop is used to maintain the flow so that the robot state can be continuosly updated
 Pressing "q" cancels the loop and lets the user exit control of the robot
